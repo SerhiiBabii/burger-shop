@@ -1,0 +1,134 @@
+service: burger-shop
+frameworkVersion: '3'
+custom:
+  burgerTableName: burger-table-${sls:stage}
+  orderTableName: order-table-${sls:stage}
+  imageBucketIName: image-bucket-test-2024
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: eu-central-1
+  apiGateway:
+    binaryMediaTypes:
+      - 'multipart/form-data'
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - dynamodb:Query
+            - dynamodb:Scan
+            - dynamodb:GetItem
+            - dynamodb:PutItem
+            - dynamodb:UpdateItem
+            - dynamodb:DeleteItem
+          Resource:
+            - !GetAtt BurgersTable.Arn
+        - Effect: Allow
+          Action:
+            - dynamodb:Query
+            - dynamodb:Scan
+            - dynamodb:GetItem
+            - dynamodb:PutItem
+            - dynamodb:UpdateItem
+            - dynamodb:DeleteItem
+          Resource:
+            - !GetAtt OrdersTable.Arn
+        - Effect: Allow
+          Action:
+            - s3:*
+          Resource: "*"
+  environment:
+    BURGER_TABLE: ${self:custom.burgerTableName}
+    ORDER_TABLE: ${self:custom.orderTableName}
+    IMAGE_BUCKET: ${self:custom.imageBucketIName}
+    REGION: ${self:provider.region}
+functions:
+  api:
+    handler: handler/index.handler
+    events:
+      - http:
+          path: api/burger
+          method: get
+          cors: true
+      - http:
+          path: api/burger/{id}
+          method: get
+          cors: true
+      - http:
+          path: api/burger
+          method: post
+          cors: true
+      - http:
+          path: api/burger/{id}
+          method: put
+          cors: true
+      - http:
+          path: api/burger/{id}
+          method: delete
+          cors: true
+      - http:
+          path: api/order
+          method: get
+          cors: true
+      - http:
+          path: api/order/{id}
+          method: get
+          cors: true
+      - http:
+          path: api/order
+          method: post
+          cors: true
+      - http:
+          path: api/order/{id}
+          method: put
+          cors: true
+      - http:
+          path: api/order/{id}
+          method: delete
+          cors: true
+      - http:
+          path: api/image
+          method: get
+          cors: true
+      - http:
+          path: api/image/{imageName}
+          method: get
+          cors: true
+      - http:
+          path: api/image
+          method: post
+          cors: true
+resources:
+  Resources:
+    BurgersTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        BillingMode: PAY_PER_REQUEST
+        TableName: ${self:custom.burgerTableName}
+    OrdersTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        BillingMode: PAY_PER_REQUEST
+        TableName: ${self:custom.orderTableName}
+    ImagesBurger:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: image-bucket-test-2024
+        PublicAccessBlockConfiguration:
+          BlockPublicAcls: false
+          BlockPublicPolicy: false
+          IgnorePublicAcls: false
+          RestrictPublicBuckets: false
